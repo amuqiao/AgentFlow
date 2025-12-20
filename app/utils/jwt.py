@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from app.config import app_settings
+from app.dependencies.config import app_settings
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

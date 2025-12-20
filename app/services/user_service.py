@@ -3,13 +3,9 @@ from app.models.user import User
 from app.schemas.user import UserCreate
 from app.utils.password import get_password_hash, verify_password
 from app.utils.jwt import create_access_token
-from app.logger.logger import logger
+from app.config.logger import logger
 from app.repositories.sqlite.user_repository import UserRepository
-from app.exceptions.custom_exceptions import (
-    ConflictError,
-    AuthenticationError,
-    NotFoundError,
-)
+from app.exception import BusinessException, AuthException, NotFoundException
 
 
 class UserService:
@@ -29,7 +25,7 @@ class UserService:
             logger.warning(
                 f"User registration failed: username {user_create.username} already exists"
             )
-            raise ConflictError(detail="Username already registered")
+            raise BusinessException(message="Username already registered", code=409)
 
         # 检查邮箱是否已存在
         existing_email = self.user_repository.get_by_email(user_create.email)
@@ -37,7 +33,7 @@ class UserService:
             logger.warning(
                 f"User registration failed: email {user_create.email} already exists"
             )
-            raise ConflictError(detail="Email already registered")
+            raise BusinessException(message="Email already registered", code=409)
 
         # 创建新用户
         hashed_password = get_password_hash(user_create.password)
@@ -59,14 +55,14 @@ class UserService:
         user = self.user_repository.get_by_username(username)
         if not user:
             logger.warning(f"Authentication failed: user {username} not found")
-            raise AuthenticationError(detail="Incorrect username or password")
+            raise AuthException(message="Incorrect username or password")
 
         # 验证密码
         if not verify_password(password, user.password_hash):
             logger.warning(
                 f"Authentication failed: incorrect password for user {username}"
             )
-            raise AuthenticationError(detail="Incorrect username or password")
+            raise AuthException(message="Incorrect username or password")
 
         logger.info(f"User authenticated successfully: {username}")
         return user
@@ -79,7 +75,7 @@ class UserService:
         user = self.user_repository.get(user_id)
         if not user:
             logger.warning(f"User not found: {user_id}")
-            raise NotFoundError(detail="User not found")
+            raise NotFoundException(message="User not found")
         return user
 
     @staticmethod

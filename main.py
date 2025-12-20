@@ -1,18 +1,22 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 import argparse
 import os
-from app.config import (
+from app.dependencies.config import (
     app_settings,
     config_deps,
     AppSettings,
     SQLiteConfig,
     LoggingConfig,
 )
-from app.databases import database_manager, sqlite
+from app.dependencies.db import database_manager, sqlite
 from app.api.v1 import api_v1_router
 from app.middleware import setup_cors, request_logger_middleware
-from app.exceptions.exception_handler import global_exception_handler
-from app.logger.logger import logger
+from app.middleware.request import request_id_middleware
+from app.exception import custom_exception_handler
+from app.exception.base import BaseAppException
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from app.config.logger import logger
 
 # 创建FastAPI应用
 app = FastAPI(
@@ -49,8 +53,16 @@ setup_cors(app)
 # 添加请求日志中间件
 app.middleware("http")(request_logger_middleware)
 
+# 添加Request ID中间件
+app.middleware("http")(request_id_middleware)
+
+
 # 注册全局异常处理器
-app.add_exception_handler(Exception, global_exception_handler)
+app.add_exception_handler(BaseAppException, custom_exception_handler)
+app.add_exception_handler(RequestValidationError, custom_exception_handler)
+app.add_exception_handler(StarletteHTTPException, custom_exception_handler)
+app.add_exception_handler(Exception, custom_exception_handler)
+
 
 # 包含API v1路由
 app.include_router(api_v1_router, prefix=app_settings.API_V1_STR)

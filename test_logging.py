@@ -6,7 +6,7 @@ import logging
 sys.path.append(os.path.abspath('.'))
 
 # 导入并初始化日志
-from app.logger.logger import logger
+from app.config.logger import logger
 
 # 测试不同级别的日志
 logger.debug("这是一条DEBUG级别的日志")

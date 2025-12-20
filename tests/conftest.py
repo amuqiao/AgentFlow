@@ -41,8 +41,8 @@ def client(db):
         finally:
             db.close()
 
-    # 替换依赖项
-    from app.databases import get_sqlite_db
+    # 只使用新的依赖项
+    from app.dependencies.db import get_sqlite_db
 
     app.dependency_overrides[get_sqlite_db] = override_get_sqlite_db
 

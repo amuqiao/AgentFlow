@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 from main import app
-from app.config import app_settings, sqlite_config, logging_config
-from app.config.base import BaseSettings
+from app.dependencies.config import app_settings, sqlite_config, logging_config
+from app.dependencies.config import BaseSettings
 import logging
 
 
@@ -65,7 +65,7 @@ def test_config_dependency_injection():
 def test_logging_config():
     """测试日志配置"""
     # 测试日志模块配置
-    from app.logger.logger import logger
+    from app.config.logger import logger
 
     # 测试日志级别设置
     assert logger.level == logging.INFO

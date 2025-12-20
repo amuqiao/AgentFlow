@@ -1,6 +1,6 @@
 from app.services.user_service import UserService
 from app.schemas.user import UserCreate
-from app.exceptions.custom_exceptions import ConflictError, AuthenticationError
+from app.exception import BusinessException, AuthException
 
 
 def test_register_user(db):
@@ -32,12 +32,13 @@ def test_register_existing_username(db):
         username="existinguser", email="different@example.com", password="password456"
     )
 
-    # 验证抛出ConflictError异常
+    # 验证抛出BusinessException异常
     try:
         UserService().register_user(db, duplicate_user_data)
-        assert False, "Expected ConflictError was not raised"
-    except ConflictError as e:
-        assert e.detail == "Username already registered"
+        assert False, "Expected BusinessException was not raised"
+    except BusinessException as e:
+        assert e.message == "Username already registered"
+        assert e.code == 409
 
 
 def test_register_existing_email(db):
@@ -53,12 +54,13 @@ def test_register_existing_email(db):
         username="user2", email="common@example.com", password="password456"
     )
 
-    # 验证抛出ConflictError异常
+    # 验证抛出BusinessException异常
     try:
         UserService().register_user(db, duplicate_user_data)
-        assert False, "Expected ConflictError was not raised"
-    except ConflictError as e:
-        assert e.detail == "Email already registered"
+        assert False, "Expected BusinessException was not raised"
+    except BusinessException as e:
+        assert e.message == "Email already registered"
+        assert e.code == 409
 
 
 def test_authenticate_user_success(db):
@@ -82,9 +84,10 @@ def test_authenticate_user_invalid_username(db):
     # 测试使用不存在的用户名认证
     try:
         UserService().authenticate_user(db, "nonexistent", "password123")
-        assert False, "Expected AuthenticationError was not raised"
-    except AuthenticationError as e:
-        assert e.detail == "Incorrect username or password"
+        assert False, "Expected AuthException was not raised"
+    except AuthException as e:
+        assert e.message == "Incorrect username or password"
+        assert e.code == 401
 
 
 def test_authenticate_user_invalid_password(db):
@@ -98,6 +101,7 @@ def test_authenticate_user_invalid_password(db):
     # 测试使用错误的密码认证
     try:
         UserService().authenticate_user(db, "authuser2", "wrongpassword")
-        assert False, "Expected AuthenticationError was not raised"
-    except AuthenticationError as e:
-        assert e.detail == "Incorrect username or password"
+        assert False, "Expected AuthException was not raised"
+    except AuthException as e:
+        assert e.message == "Incorrect username or password"
+        assert e.code == 401

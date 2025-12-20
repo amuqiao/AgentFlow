@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.config.database import sqlite_config
 from app.databases.base import DatabaseConnection
-from app.logger.logger import logger
+from app.config.logger import logger
 
 
 class SQLiteConnection(DatabaseConnection):

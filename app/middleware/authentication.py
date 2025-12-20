@@ -1,44 +1,15 @@
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
-from jose import JWTError, jwt
-from app.config import app_settings
-from app.databases import deps
-from app.services.user_service import UserService
-from app.logger.logger import logger
+# 旧的认证依赖模块，已迁移到app.dependencies.auth
+# 保留此文件用于向后兼容
+from app.dependencies.auth import (
+    get_current_user,
+    oauth2_scheme,
+    AuthDeps,
+    auth_deps,
+)
 
-# OAuth2密码Bearer模式
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{app_settings.API_V1_STR}/auth/login")
-
-
-async def get_current_user(
-    token: str = Depends(oauth2_scheme), db: Session = deps.sqlite()
-):
-    """获取当前认证用户"""
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-
-    try:
-        # 解码JWT令牌
-        payload = jwt.decode(
-            token, app_settings.SECRET_KEY, algorithms=[app_settings.ALGORITHM]
-        )
-        user_id: str = payload.get("sub")
-        if user_id is None:
-            logger.warning("JWT token missing 'sub' claim")
-            raise credentials_exception
-    except JWTError as e:
-        logger.warning(f"JWT token decoding failed: {str(e)}")
-        raise credentials_exception
-
-    # 获取用户
-    user_service = UserService()
-    user = user_service.get_user_by_id(db, int(user_id))
-    if user is None:
-        logger.warning(f"User not found for ID: {user_id}")
-        raise credentials_exception
-
-    return user
+__all__ = [
+    "get_current_user",
+    "oauth2_scheme",
+    "AuthDeps",
+    "auth_deps",
+]
