@@ -384,19 +384,26 @@ def local_search(query) -> SearchResult:
 
 import asyncio
 from typing import Any
-from mcp.server.fastmcp import FastMCP
-import httpx
-import json
-#创建一个对象
-mcp = FastMCP("graphrag")
 
-@mcp.tool()
-async def local_asearch(query) -> str:
-    """为斗破苍穹小说提供相关的知识补充"""
-    search_engine = build_local_search_engine()
-    result = await search_engine.asearch(query)
-    print("search_result:", type(result.response),result.response)
-    return result.response
+# 尝试导入mcp模块，如果失败则跳过
+mcp = None
+try:
+    from mcp.server.fastmcp import FastMCP
+    import httpx
+    import json
+    # 创建一个对象
+    mcp = FastMCP("graphrag")
+    
+    @mcp.tool()
+    async def local_asearch(query) -> str:
+        """为斗破苍穹小说提供相关的知识补充"""
+        search_engine = build_local_search_engine()
+        result = await search_engine.asearch(query)
+        print("search_result:", type(result.response),result.response)
+        return result.response
+except ImportError as e:
+    print(f"MCP module not available: {e}")
+    print("Continuing without MCP support")
 
 
 async def local_astream_search(query) -> AsyncGenerator:
@@ -532,12 +539,20 @@ if __name__ == '__main__':
     
     if args.mode == 'server':
         '''启动MCP服务器，用于与客户端联调'''
-        print("启动GraphRAG MCP服务器...")
-        print("使用 'python graphrag_client.py graphrag_server.py' 命令连接客户端")
-        mcp.run(transport="stdio")
+        if mcp is not None:
+            print("启动GraphRAG MCP服务器...")
+            print("使用 'python graphrag_client.py graphrag_server.py' 命令连接客户端")
+            mcp.run(transport="stdio")
+        else:
+            print("MCP服务器不可用，因为mcp模块未安装")
+            print("请安装mcp模块后重试")
     else:
         '''运行测试模式，直接执行本地搜索'''
         print(f"运行GraphRAG测试查询: {args.query}")
-        result = asyncio.run(local_asearch(args.query))
-        print("\n测试结果:")
-        print(result)
+        # 确保local_asearch函数可用
+        if 'local_asearch' in locals() or 'local_asearch' in globals():
+            result = asyncio.run(local_asearch(args.query))
+            print("\n测试结果:")
+            print(result)
+        else:
+            print("local_asearch函数不可用")
