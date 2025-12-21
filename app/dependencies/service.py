@@ -1,15 +1,15 @@
 from fastapi import Depends
 from app.services.user_service import UserService
-from app.dependencies.db import get_sqlite_db
+from app.dependencies.repository import get_user_repository
 
 
 # 服务层依赖注入函数
-def get_user_service():
+def get_user_service(user_repository=Depends(get_user_repository)):
     """获取用户服务实例
-    
-    返回单例的UserService实例，确保服务层的一致性
+
+    返回UserService实例，注入UserRepository实例，确保服务层的一致性
     """
-    return UserService()
+    return UserService(user_repository=user_repository)
 
 
 # 服务层依赖注入容器

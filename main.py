@@ -17,6 +17,7 @@ from app.exception.base import BaseAppException
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.config.logger import logger
+from app.events.base import event_bus, EventType, UserLoggedInEvent, UserRegisteredEvent
 
 # 创建FastAPI应用
 app = FastAPI(
@@ -26,16 +27,65 @@ app = FastAPI(
 )
 
 
+# 1. 定义事件处理器 - 处理用户注册事件
+def handle_user_registered(event: UserRegisteredEvent):
+    """处理用户注册事件的函数
+
+    事件处理器格式：
+    def 处理器名称(event: 事件类型):
+        # 从event.data中获取事件数据
+        # 处理逻辑
+
+    参数：
+        event: 事件对象，包含事件类型和事件数据
+    """
+    # 从event.data字典中获取事件数据
+    user_id = event.data["user_id"]
+    username = event.data["username"]
+    email = event.data["email"]
+
+    # 处理事件 - 这里只是打印日志，实际应用中可以执行各种操作
+    logger.info(
+        f"【用户注册事件】: 用户ID={user_id}, 用户名={username}, 邮箱={email} 注册成功"
+    )
+
+
+# 2. 定义事件处理器 - 处理用户登录事件
+def handle_user_logged_in(event: UserLoggedInEvent):
+    """处理用户登录事件的函数"""
+    # 从event.data字典中获取事件数据
+    user_id = event.data["user_id"]
+    username = event.data["username"]
+    ip_address = event.data["ip_address"]
+
+    # 处理事件
+    logger.info(
+        f"【用户登录事件】: 用户 {username} (ID: {user_id}) 从 IP {ip_address} 登录成功"
+    )
+
+
 # 应用启动事件
 @app.on_event("startup")
 async def startup_event():
-    """应用启动事件 - 初始化数据库连接"""
+    """应用启动事件 - 初始化数据库连接和事件订阅"""
     logger.info(f"应用启动: {app_settings.APP_NAME} v{app_settings.APP_VERSION}")
     logger.info("正在连接所有数据库...")
     database_manager.connect_all()
     # 创建所有表
     sqlite.Base.metadata.create_all(bind=sqlite.engine)
     logger.info("所有数据库连接成功")
+
+    # 3. 订阅事件 - 订阅用户注册事件
+    # 订阅格式：event_bus.subscribe(事件类型, 事件处理器)
+    # 参数说明：
+    #   事件类型: EventType枚举值，如EventType.USER_REGISTERED
+    #   事件处理器: 处理该事件的函数，如handle_user_registered
+    event_bus.subscribe(EventType.USER_REGISTERED, handle_user_registered)
+    logger.info("已订阅用户注册事件")
+
+    # 4. 订阅事件 - 订阅用户登录事件
+    event_bus.subscribe(EventType.USER_LOGGED_IN, handle_user_logged_in)
+    logger.info("已订阅用户登录事件")
 
 
 # 应用关闭事件

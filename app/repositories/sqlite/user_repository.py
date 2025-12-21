@@ -1,11 +1,11 @@
 from sqlalchemy.orm import Session
 from typing import Optional, List
-from app.repositories.base import BaseRepository
+from app.repositories.base import UserRepositoryInterface
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
 
 
-class UserRepository(BaseRepository):
+class UserRepository(UserRepositoryInterface):
     """用户仓储（SQLite）"""
 
     def __init__(self, db: Session):

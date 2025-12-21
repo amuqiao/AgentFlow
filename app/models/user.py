@@ -1,8 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.sql import func
-from app.databases.sqlite.connection import sqlite_connection
-
-Base = sqlite_connection.Base
+from app.models.base import Base
 
 
 class User(Base):

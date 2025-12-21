@@ -1,9 +1,9 @@
 from sqlalchemy import create_engine, text
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.config.database import sqlite_config
 from app.databases.base import DatabaseConnection
 from app.config.logger import logger
+from app.models.base import Base
 
 
 class SQLiteConnection(DatabaseConnection):
@@ -12,7 +12,7 @@ class SQLiteConnection(DatabaseConnection):
     def __init__(self):
         self._engine = None
         self._SessionLocal = None
-        self._Base = declarative_base()
+        self._Base = Base
 
     def connect(self):
         """建立SQLite连接"""

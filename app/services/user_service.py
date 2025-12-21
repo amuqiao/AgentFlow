@@ -4,20 +4,24 @@ from app.schemas.user import UserCreate
 from app.utils.password import get_password_hash, verify_password
 from app.utils.jwt import create_access_token
 from app.config.logger import logger
-from app.repositories.sqlite.user_repository import UserRepository
+from app.repositories.base import UserRepositoryInterface
 from app.exception import BusinessException, AuthException, NotFoundException
+from app.events.base import event_bus, UserRegisteredEvent, UserLoggedInEvent
 
 
 class UserService:
     """用户服务类"""
 
-    def __init__(self):
-        self.user_repository = None
+    def __init__(self, user_repository: UserRepositoryInterface = None):
+        self.user_repository = user_repository
 
     def register_user(self, db: Session, user_create: UserCreate) -> User:
         """用户注册"""
-        # 初始化仓储
-        self.user_repository = UserRepository(db)
+        # 如果没有通过依赖注入提供仓储实例，则使用db创建一个临时实例
+        if not self.user_repository:
+            from app.repositories.sqlite.user_repository import UserRepository
+
+            self.user_repository = UserRepository(db)
 
         # 检查用户名是否已存在
         existing_user = self.user_repository.get_by_username(user_create.username)
@@ -44,12 +48,23 @@ class UserService:
         db_user = self.user_repository.create(user_data)
 
         logger.info(f"User registered successfully: {user_create.username}")
+
+        # 发布用户注册事件
+        event_bus.publish(
+            UserRegisteredEvent(
+                user_id=db_user.id, username=db_user.username, email=db_user.email
+            )
+        )
+
         return db_user
 
     def authenticate_user(self, db: Session, username: str, password: str) -> User:
         """用户认证"""
-        # 初始化仓储
-        self.user_repository = UserRepository(db)
+        # 如果没有通过依赖注入提供仓储实例，则使用db创建一个临时实例
+        if not self.user_repository:
+            from app.repositories.sqlite.user_repository import UserRepository
+
+            self.user_repository = UserRepository(db)
 
         # 查询用户
         user = self.user_repository.get_by_username(username)
@@ -69,8 +84,11 @@ class UserService:
 
     def get_user_by_id(self, db: Session, user_id: int) -> User:
         """根据ID获取用户"""
-        # 初始化仓储
-        self.user_repository = UserRepository(db)
+        # 如果没有通过依赖注入提供仓储实例，则使用db创建一个临时实例
+        if not self.user_repository:
+            from app.repositories.sqlite.user_repository import UserRepository
+
+            self.user_repository = UserRepository(db)
 
         user = self.user_repository.get(user_id)
         if not user:
@@ -79,10 +97,18 @@ class UserService:
         return user
 
     @staticmethod
-    def generate_token(user: User) -> str:
+    def generate_token(user: User, ip_address: str = "unknown") -> str:
         """生成JWT令牌"""
         access_token = create_access_token(
             data={"sub": str(user.id), "username": user.username}
         )
         logger.info(f"Generated access token for user: {user.username}")
+
+        # 发布用户登录事件
+        event_bus.publish(
+            UserLoggedInEvent(
+                user_id=user.id, username=user.username, ip_address=ip_address
+            )
+        )
+
         return access_token

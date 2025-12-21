@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app.dependencies import db_deps, service_deps, config_deps
@@ -22,17 +22,21 @@ def register(
 
 @router.post("/login", response_model=Token)
 def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = db_deps.sqlite(),
     user_service=service_deps.user_service(),
     app_settings=config_deps.app(),
 ):
     """用户登录"""
+    # 获取客户端IP地址
+    client_ip = request.client.host if request.client else "unknown"
+
     # 验证用户
     user = user_service.authenticate_user(db, form_data.username, form_data.password)
 
-    # 生成访问令牌
-    access_token = user_service.generate_token(user)
+    # 生成访问令牌，传递IP地址
+    access_token = user_service.generate_token(user, ip_address=client_ip)
 
     return {
         "access_token": access_token,
